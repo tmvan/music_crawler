@@ -28,6 +28,7 @@ def start_crawl(deep=3):
             data_name = follow["data-name"]
             artist = data_id, data_name
             artists.append(artist)
+            print("added artist", data_name)
             return artist
         else:
             return None
@@ -58,47 +59,47 @@ def start_crawl(deep=3):
             pass
         
         if soup:
-            print(count, url)
             if RE_URL_ARTIST.match(url):
                 artist_inner_crawl(inner_url=url)
             elif RE_URL_SONG.match(url):
                 like = soup.find("div", class_="zlike fn-zlike")
                 info = soup.find("div", class_="info-content")
-                divs = info.find_all("div", recursive=False)
-                count_divs = len(divs)
                 # get id and title of song
                 song_id = like["data-id"]
                 song_title = info.h1.getText()
                 # get name of artist
                 song_artists = []
-                div1st = divs[0]
-                list_a = div1st.find_all("a", {"title": True, "href": True})
-                for a in list_a:
-                    title = a["title"]
-                    artist_id = next((artist[0] for artist in artists if artist[1] == title), None)
+                artist_links = info.select("span.zadash + div.inline a")
+                for artist_link in artist_links:
+                    title = artist_link["title"]
+                    artist_id = next(\
+                        (artist[0] for artist in artists if artist[1] == title),\
+                        None)
                     if not artist_id:
-                        artist = artist_inner_crawl(inner_url=a["href"])
+                        artist = artist_inner_crawl(inner_url=artist_link["href"])
                         if not artist:
                             artist_name = title
                             artist_id = uuid.uuid1()
                             artists.append((artist_id, artist_name))
+                            print("added unknown artist", artist_name)
                         else:
                             artist_id = artist[0]
                     song_artists.append(artist_id)
                 # get genre of song
                 song_genres = []
-                if count_divs > 2:
-                    div3rd = divs[2]
-                    list_a = div3rd.find_all("a", {"title": True, "href": True})
-                    for a in list_a:
-                        genre_name = a.getText()
-                        genre_id = next((genre[0] for genre in genres if genre[1] == genre_name), None)
-                        if not genre_id:
-                            href = a["href"]
-                            search = RE_EXTRACT_GENRE_ID.search(href)
-                            genre_id = search.group(1)
-                            genres.append((genre_id, genre_name))
-                        song_genres.append(genre_id)
+                genre_links = info.select("div.info-song-top")[-1].select("a")
+                for genre_link in genre_links:
+                    genre_name = genre_link.getText()
+                    genre_id = next(\
+                        (genre[0] for genre in genres if genre[1] == genre_name),\
+                        None)
+                    if not genre_id:
+                        href = genre_link["href"]
+                        search = RE_EXTRACT_GENRE_ID.search(href)
+                        genre_id = search.group(1)
+                        genres.append((genre_id, genre_name))
+                        print("added genre", genre_name)
+                    song_genres.append(genre_id)
                 # get total play
                 api_url = TOTAL_PLAY_API.format(song_id)
                 bytes = get_html(api_url)
@@ -106,13 +107,16 @@ def start_crawl(deep=3):
                 total = j["total_play"]
                 # append song into list of songs
                 songs.append((song_id, song_title, total, song_artists, song_genres, get_now()))
+                print("added song", song_title)
             if node_deep < deep:
-                links = get_all_link(soup=soup, gz=True, check=lambda x: HOMEPAGE in x and "#" not in x and "?" not in x)
+                links = get_all_link(soup=soup, gz=True, check=lambda x: \
+                                     HOMEPAGE in x and "#" not in x and "?" not in x)
                 for link in links:
                     quote_link = quote(string=link, safe=":/")
                     if all(item[0] != quote_link for item in crawl) and quote_link not in crawled:
                         crawl.append((quote_link, node_deep + 1))
                         count += 1
+            print("remaining", count)
     return songs, artists, genres
 
 
