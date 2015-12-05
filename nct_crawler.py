@@ -5,13 +5,11 @@ import re
 import json
 import uuid
 
-HOMEPAGE = "http://mp3.zing.vn"
-TOTAL_PLAY_API = "http://mp3.zing.vn/xhr/song/get-total-play?id={}&type=song"
-RE_URL_ARTIST = re.compile("^[^/]+//[^/]+/nghe-si/[^/]+/?$", re.IGNORECASE)
-RE_URL_SONG = re.compile("^[^/]+//[^/]+/bai-hat/.*$", re.IGNORECASE)
-RE_EXTRACT_GENRE_ID = re.compile(\
-    "^[^/]*//[^/]*/the-loai-bai-hat/[^/]*/([^/.]*)\\.html$", re.IGNORECASE)
-RE_VALID_URL = re.compile("^http\\://mp3\\.zing\\.vn/.*\\.html$", re.IGNORECASE)
+HOMEPAGE = "http://www.nhaccuatui.com/"
+TOTAL_PLAY_API = "http://www.nhaccuatui.com/interaction/api/v2/hit-counter"
+RE_URL_ARTIST = re.compile("^[^/]+//[^/]+/nghe-si-[^/]+/?$", re.IGNORECASE)
+RE_URL_SONG = re.compile("^[^/]+//[^/]+/bai-hat/[^/\.]+\.\w+\.html$", re.IGNORECASE)
+RE_VALID_URL = re.compile("^http\\:(www.)?//nhaccuatui\\.com/.*\\.html$", re.IGNORECASE)
 
 def start_crawl(deep=3):
     crawl = [(HOMEPAGE, 0)]
@@ -52,10 +50,15 @@ def start_crawl(deep=3):
             
             crawled.append(url)
             soup = get_soup(url, True)
-            
-            if soup.header: soup.header.extract()
-            if soup.footer: soup.footer.extract()
-            if node_deep > 0: soup.nav.extract()
+
+            if node_deep > 0:
+                remove_divs = [soup.find("div", attrs={"id": "header"}),\
+                               soup.find("div", attrs={"id": "submenu"}),\
+                               soup.find("div", class_="footer"),\
+                               soup.find("div", class_="cfooter")]
+                for remove_div in remove_divs:
+                    if remove_div:
+                        remove_div.extract()
             
             if soup:
                 s = "\n%s|%s %s: " % (count, node_deep, url)
@@ -111,7 +114,8 @@ def start_crawl(deep=3):
                     # append song into list of songs
                     songs.append((song_id, "\"" + song_title + "\"", total, \
                                   ";".join(str(x) for x in song_artists), \
-                                  ";".join(str(x) for x in song_genres)))
+                                  ";".join(str(x) for x in song_genres), \
+                                  get_now()))
                     
                 if node_deep < deep:
                     links = get_all_link(soup=soup, gz=True,\
@@ -130,9 +134,6 @@ def start_crawl(deep=3):
 if __name__ == "__main__":
     songs, artists, genres = start_crawl()
     now = get_now("%Y-%m-%d %H.%M")
-    write_csv("[zing][%s] songs" % now, songs, \
-              ["Id", "Title", "Total play", "Artists", "Genres"])
-    write_csv("[zing][%s] artists" % now, artists, \
-              ["Id", "Name"])
-    write_csv("[zing][%s] genres" % now, genres, \
-              ["Id", "Name"])
+    write_csv("[nct][%s] songs" % now, songs)
+    write_csv("[nct][%s] artists" % now, artists)
+    write_csv("[nct][%s] genres" % now, genres)

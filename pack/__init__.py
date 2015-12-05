@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import io
 import gzip
 import datetime
+import csv
 
 def get_html(url, gz=False):
     try:
@@ -42,8 +43,10 @@ def get_now(strftime="%Y-%m-%d %H:%M:%S"):
     now = datetime.datetime.now()
     return now.strftime(strftime)
 
-def write_csv(name, list):
-    with open(name + ".csv", mode="w+", encoding="utf-8") as f:
-        for row in list:
-            s = ",".join(str(x) for x in row) + "\n"
-            f.write(s)
+def write_csv(name, arr, titles=[]):
+    with open(name + ".csv", mode="w+", encoding="utf-8", newline="\n") as f:
+        csvwriter = csv.writer(f)
+        if titles:
+            csvwriter.writerow(titles)
+        for row in arr:
+            csvwriter.writerow(row)
