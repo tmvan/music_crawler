@@ -109,7 +109,7 @@ def start_crawl(deep=3):
                     j = json.loads(b.decode("utf-8"))
                     total = j["total_play"]
                     # append song into list of songs
-                    songs.append((song_id, "\"" + song_title + "\"", total, \
+                    songs.append((song_id, song_title, total, \
                                   ";".join(str(x) for x in song_artists), \
                                   ";".join(str(x) for x in song_genres)))
                     
@@ -122,14 +122,15 @@ def start_crawl(deep=3):
                            quote_link not in crawled:
                             crawl.append((quote_link, node_deep + 1))
                             count += 1
-        except:
+        except Exception as e:
+            print(e)
             pass
     return songs, artists, genres
 
 
 if __name__ == "__main__":
     songs, artists, genres = start_crawl()
-    now = get_now("%Y-%m-%d %H.%M")
+    now = get_now("%Y-%m-%d")
     write_csv("[zing][%s] songs" % now, songs, \
               ["Id", "Title", "Total play", "Artists", "Genres"])
     write_csv("[zing][%s] artists" % now, artists, \
