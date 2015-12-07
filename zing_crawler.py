@@ -80,7 +80,7 @@ def start_crawl(deep=3):
                             artist = artist_inner_crawl(inner_url=artist_link["href"])
                             if not artist:
                                 artist_name = title
-                                artist_id = uuid.uuid1()
+                                artist_id = str(uuid.uuid1())
                                 print("add unknown artist", artist_name, end=", ")
                                 artists.append((artist_id, artist_name))
                             else:

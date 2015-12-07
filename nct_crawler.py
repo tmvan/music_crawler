@@ -58,8 +58,10 @@ def start_crawl(deep=3):
                 if RE_URL_ARTIST.match(url):
                     artist_left_avatar = soup.find("div", class_="singer-left-avatar")
                     artist_name = artist_left_avatar.h1.getText()
-                    artist_id = url
-                    artists.append((artist_id, artist_name))
+                    if(next((artist[0] for artist in artists \
+                             if artist[1] == artist_name), None)):
+                        artist_id = str(uuid.uuid1())
+                        artists.append((artist_id, artist_name))
                 elif RE_URL_SONG.match(url):
                     detail_info = soup.find("div", class_="detail_info_playing_now")
                     bold_string = soup.find_all("b")
@@ -76,11 +78,7 @@ def start_crawl(deep=3):
                                           if artist[1] == artist_name), None)
                         if not artist_id:
                             print("add artist", artist_name, end=", ")
-                            href = quote(artist_link["href"], safe=":/")
-                            if RE_URL_ARTIST.match(href):
-                                artist_id = href
-                            else:
-                                artist_id = uuid.uuid1()
+                            artist_id = str(uuid.uuid1())
                             artists.append((artist_id, artist_name))
                         song_artists.append(artist_id)
                     # get genre of song
@@ -93,8 +91,7 @@ def start_crawl(deep=3):
                                         None)
                         if not genre_id:
                             print("add genre", genre_name, end=", ")
-                            href = genre_link["href"]
-                            genre_id = href
+                            genre_id = str(uuid.uuid1())
                             genres.append((genre_id, genre_name))
                         song_genres.append(genre_id)
                     # get total play
